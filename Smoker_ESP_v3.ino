@@ -9,6 +9,9 @@
 //  -Program button based input (skip WiFi/MQTT)
 //  -MQTT based inputs
 
+//New update 23 Jul 2018
+//adding local webpage interface
+
 
 //#include <MCP320x.h>
 #include <Ticker.h>
@@ -84,7 +87,7 @@ Adafruit_MAX31855 TC2(CLK, TC2CS, MISO);
 //MCP320x adc(ADCCS, MOSI, MISO, CLK);
 
 
-// MQTT Clas
+// MQTT Class
 IPAddress server(192,168,1,11);
 //#define server "mqtt.dioty.co"
 WiFiClient espClient;
@@ -92,7 +95,7 @@ PubSubClient client(espClient);
 
 //Display Setup
 SSD1306  display(0x3C, 4, 5);
- 
+
 
 
 void setup_wifi() {
@@ -142,11 +145,12 @@ void setup_wifi() {
   delay(3000);
 }
 
- 
+
 void reconnect() {
+  //connects to MQTT broker and subscribes to required topics
   // only runs once - calling function (loop in this case) must recall if required
   DEBUG_PRINT("Attempting MQTT connection...");
- 
+
   // Attempt to connect
   if (client.connect("Smoker Remote", userId, passWd)) {
     DEBUG_PRINTLN("connected");
@@ -163,7 +167,8 @@ void reconnect() {
 }
 
 
-int readPit() {       //takes 6 measurements (up to 300ms) 
+int readPit() {       //takes 6 measurements (up to 300ms)
+  //averages both thermocouple readings (if connected)
   int numValid = 0;
   int numCount = 0;
   double total = 0.0;
@@ -220,14 +225,14 @@ void drawScreen() {
     display.drawString(15, 0, "Pit ");
     display.drawString(60, 0, "Food");
     if (WiFi.status() == WL_CONNECTED) {
-      display.drawString(108,0, "W"); 
+      display.drawString(108,0, "W");
     }
     if (client.connected()) {
-      display.drawString(120,0, "M"); 
+      display.drawString(120,0, "M");
     }
     display.drawString(110,53, "F");
     display.drawString(121,53, "D");
-    
+
     display.setFont(ArialMT_Plain_24);
     display.setTextAlignment(TEXT_ALIGN_CENTER);
     if ((pit<10) or (pit>900)) {
@@ -249,20 +254,20 @@ void drawScreen() {
 
     display.setFont(ArialMT_Plain_16);
     switch (mode) {
-      case 0: 
+      case 0:
         display.drawString(26, 46, "MAN");
         break;
-      case 1: 
+      case 1:
         display.drawString(26, 46, "AUTO");
         break;
-      case 2: 
+      case 2:
         display.drawString(26, 46, "WARM");
         break;
-      case 3: 
+      case 3:
         display.drawString(26, 46, "DOOR");
         break;
     }
-    
+
 
     int height = int(fan * 0.4);
     display.fillRect(108,53-height,8,height);
@@ -280,23 +285,25 @@ void setDamp() {
   }
   val = map(damp, 0, 100, 100, 175);
   damper.write(val);
-  
+
   delay(15);
 }
 
 void setFan() {
+  //need to check if fan needs setting - 100
   if (setting < 101) {
     fan = 0;
   } else {
     fan = setting;
   }
   int val = map(fan, 0, 100, 0, 1023);
+  //currently has ~20% deadband - either use integrator or do coarse PWM
   if (val < 200) val = 0;
   analogWrite(FANPIN, val);
 }
 
 void callback(char* topic, byte* payload, unsigned int length) {
- 
+
   DEBUG_PRINT("Message arrived [");
   DEBUG_PRINT(topic);
   DEBUG_PRINTLN("] ");
@@ -305,8 +312,8 @@ void callback(char* topic, byte* payload, unsigned int length) {
   payload[length] = '\0';
   char *msgString = (char *)payload;
   int val = atoi(msgString);
-  
- 
+
+
   if (strcmp(topic, setModeTopic) ==0) {
     //change mode
     if (val == 0) {
@@ -335,7 +342,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
 void sendMQTT(){
   //called every 5 seconds
   //send temps, fan, damper, and mode
-  
+
   String payload = "Pit:" + String(pit) + " Food:" + String(food[0]) + "/" + String(food[1]) +
                     " Fan:" + String(fan) + " Damper:" + String(damp) + " " + mode;
   int pld_len = payload.length()+1;
@@ -346,10 +353,10 @@ void sendMQTT(){
 
 void doPID() {
   switch (mode) {
-    
-    
+
+
     case 0:  //man
-      
+
     break;
     case 1:  //auto
       err[0] = setTemp - pit;
@@ -366,7 +373,7 @@ void doPID() {
     case 2:  //warm
     break;
     case 3: //door
-    break; 
+    break;
   }
 }
 
@@ -374,12 +381,12 @@ void doPID() {
 void setup()  {
  // pinMode(ADCCS, OUTPUT);
  // digitalWrite(ADCCS, HIGH);
-  
+
   display.init();
   display.flipScreenVertically();
 
   setDamp();
-  
+
   #ifdef DEBUG
     Serial.begin(9600);
   #else
@@ -435,16 +442,16 @@ void setup()  {
 
   setup_wifi();
   client.setServer(server, 1883);
-  client.setCallback(callback); 
+  client.setCallback(callback);
 }
- 
+
 void loop()
 {
-   //check wifi and MQTT, reconnect if necessary  
+   //check wifi and MQTT, reconnect if necessary
    if (!client.connected()) {
      reconnect();
    }
-   
+
    //increment time and call time based functions
 
    timeCount++;
@@ -461,14 +468,14 @@ void loop()
         old_pit = pit;
         timeCount = 0;
         sendMQTT();
-        
+
    }*/
 
  //  setDamp();
 
-   
+
   // setFan();
-   
+
    drawScreen();
    display.display();
 
@@ -476,5 +483,5 @@ void loop()
 
    ArduinoOTA.handle();
    client.loop();
- 
+
 }
