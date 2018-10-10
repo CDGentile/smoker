@@ -109,7 +109,7 @@ void setup_wifi() {
   display.clear();
   display.setTextAlignment(TEXT_ALIGN_CENTER);
   display.setFont(ArialMT_Plain_16);
-  display.drawString(64, 0, "Smoker v2.0");
+  display.drawString(64, 0, "Smoker v2.1");
   display.setFont(ArialMT_Plain_10);
   display.drawString(64, 20, "Connecting to WiFi:");
   display.drawString(64, 32, ssid);
@@ -377,23 +377,7 @@ void doPID() {
   }
 }
 
-
-void setup()  {
- // pinMode(ADCCS, OUTPUT);
- // digitalWrite(ADCCS, HIGH);
-
-  display.init();
-  display.flipScreenVertically();
-
-  setDamp();
-
-  #ifdef DEBUG
-    Serial.begin(9600);
-  #else
-    damper.attach(SRVPIN);
-    delay(15);
-  #endif
-
+void setupArduinoOTA() {
   ArduinoOTA.onStart([]() {
     DEBUG_PRINTLN("Start");
     display.clear();
@@ -433,6 +417,26 @@ void setup()  {
     else if (error == OTA_END_ERROR) DEBUG_PRINTLN("End Failed");
   });
   ArduinoOTA.begin();
+}
+
+
+void setup()  {
+ // pinMode(ADCCS, OUTPUT);
+ // digitalWrite(ADCCS, HIGH);
+
+  display.init();
+  display.flipScreenVertically();
+
+  setDamp();
+
+  #ifdef DEBUG
+    Serial.begin(9600);
+  #else
+    damper.attach(SRVPIN);
+    delay(15);
+  #endif
+
+
 
   DEBUG_PRINTLN("Thermocouple test");
   delay(500);
