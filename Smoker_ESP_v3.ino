@@ -75,7 +75,7 @@ const char* rptTopic      = "/cdgentile@gmail.com/Smoker/Rpt";
 
 // WiFi Credentials
 const char* ssid = "Bullpup_CA";
-const char* password = "Kaseido1";
+const char* password = "************";
 
 //DIOTTY credentials
 //const char* userId = "cdgentile@gmail.com";
